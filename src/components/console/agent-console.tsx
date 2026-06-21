@@ -1431,8 +1431,8 @@ function TopBar({
     <header className="mesh-glass sticky top-3 z-20 rounded-lg px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="grid size-10 place-items-center rounded-lg bg-slate-950 text-white shadow-sm">
-            <Network className="size-5" />
+          <div className="size-10 overflow-hidden rounded-lg shadow-sm">
+            <img src="/logo.png" alt="Logo" className="size-10 object-cover" />
           </div>
           <div>
             <div className="flex items-center gap-2">
