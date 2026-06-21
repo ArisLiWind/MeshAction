@@ -35,6 +35,18 @@ The console is designed around one principle: **agents propose, MeshAction verif
 - Archive receipt context through Walrus and Seal.
 - Restore traces later for verification, debugging, or audit.
 
+## Public SuiMesh Network
+
+MeshAction is configured for the public SuiMesh testnet relay and trace registry:
+
+```bash
+SUIMESH_RELAYER_URL=https://relay.suimesh.link
+SUIMESH_TRACE_PACKAGE_ID=0x038caadb65def30619e6ec762715ea6ca232ac1195bc077086bc9a6b7e11bb80
+SUIMESH_TRACE_REGISTRY_ID=0x95c630c93000d9aeb9ff9512ead6209e0568eb327abb489dd5fc7390d034046b
+```
+
+This is a shared test network. It is useful for demos, development, and integration testing, but it does not come with uptime, retention, or compatibility guarantees.
+
 ## What You Can Run
 
 MeshAction currently ships with three Sui action demos:
@@ -84,6 +96,9 @@ Set the required runtime values:
 ```bash
 DATABASE_URL=postgresql://admin:admin@127.0.0.1:5432/admin
 SUIMESH_SUI_NETWORK=testnet
+SUIMESH_RELAYER_URL=https://relay.suimesh.link
+SUIMESH_TRACE_PACKAGE_ID=0x038caadb65def30619e6ec762715ea6ca232ac1195bc077086bc9a6b7e11bb80
+SUIMESH_TRACE_REGISTRY_ID=0x95c630c93000d9aeb9ff9512ead6209e0568eb327abb489dd5fc7390d034046b
 SUIMESH_SUI_PRIVATE_KEY=suiprivkey...
 SUIMESH_SUI_ADDRESS=0x...
 ```
@@ -119,6 +134,18 @@ SUIMESH_SUI_KEYSTORE_ENTRY=<base64 Sui CLI keystore entry>
 ```
 
 Do not commit `.env.local`, `.sui/`, `.sui-home/`, private keys, keystores, generated Move build output, or local SDK aliases. These are ignored by default.
+
+### SuiMesh Relay And Trace Registry
+
+Use the public relay and trace contracts for live testnet runs:
+
+```bash
+SUIMESH_RELAYER_URL=https://relay.suimesh.link
+SUIMESH_TRACE_PACKAGE_ID=0x038caadb65def30619e6ec762715ea6ca232ac1195bc077086bc9a6b7e11bb80
+SUIMESH_TRACE_REGISTRY_ID=0x95c630c93000d9aeb9ff9512ead6209e0568eb327abb489dd5fc7390d034046b
+```
+
+The public relay is a testnet service. Treat failures, resets, and contract changes as possible during active development.
 
 ### Hosted Agents
 
@@ -218,6 +245,8 @@ The live SuiMesh regression has been run against the public test relayer:
 ```bash
 SUIMESH_NETWORK=testnet \
 SUIMESH_RELAYER_URL=https://relay.suimesh.link \
+SUIMESH_TRACE_PACKAGE_ID=0x038caadb65def30619e6ec762715ea6ca232ac1195bc077086bc9a6b7e11bb80 \
+SUIMESH_TRACE_REGISTRY_ID=0x95c630c93000d9aeb9ff9512ead6209e0568eb327abb489dd5fc7390d034046b \
 OPENAI_MODEL=gpt-4.1-mini \
 SUIMESH_OPENAI_MODEL=gpt-4.1-mini \
 SUIMESH_WALRUS_READ_ATTEMPTS=24 \
