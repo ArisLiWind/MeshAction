@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { ConnectModal } from "@mysten/dapp-kit";
 import { cn } from "@/lib/utils";
 
 export function LandingPage() {
@@ -85,12 +86,16 @@ export function LandingPage() {
                 ready ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
               )}
             >
-              <button className="relative group inline-flex items-center justify-center px-10 py-3.5 rounded-2xl bg-white text-blue-600 font-semibold text-sm hover:bg-slate-100 active:scale-95 transition-all duration-200 shadow-xl">
-                <span className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ padding: '2px', WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)', WebkitMaskComposite: 'xor', mask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)', maskComposite: 'exclude' } as any}>
-                  <span className="absolute top-1/2 left-1/2 w-[300px] h-[300px]" style={{ background: 'conic-gradient(from 0deg, transparent, #0098F5, #6800FF, transparent 20%)', animation: 'spin-center 4s linear infinite', transform: 'translate(-50%, -50%)' }} />
-                </span>
-                <span className="relative z-10">Connect Wallet</span>
-              </button>
+              <ConnectModal
+                trigger={
+                  <button className="relative group inline-flex items-center justify-center px-10 py-3.5 rounded-2xl bg-white text-blue-600 font-semibold text-sm hover:bg-slate-100 active:scale-95 transition-all duration-200 shadow-xl">
+                    <span className="absolute inset-0 rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ padding: '2px', WebkitMask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)', WebkitMaskComposite: 'xor', mask: 'linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)', maskComposite: 'exclude' } as any}>
+                      <span className="absolute top-1/2 left-1/2 w-[300px] h-[300px]" style={{ background: 'conic-gradient(from 0deg, transparent, #0098F5, #6800FF, transparent 20%)', animation: 'spin-center 4s linear infinite', transform: 'translate(-50%, -50%)' }} />
+                    </span>
+                    <span className="relative z-10">Connect Wallet</span>
+                  </button>
+                }
+              />
               <button className="glow-btn px-10 py-3.5 text-sm font-semibold">
                 <span className="glow-mask"><span className="glow-ring" /></span>
                 <span className="btn-label">Explore Trading</span>
