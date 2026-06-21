@@ -1,51 +1,65 @@
-# MeshAction
+<p align="center">
+  <img src="./public/mesh-action-logo.jpg" alt="MeshAction" width="720" />
+</p>
 
-MeshAction is a workflow console for verifiable Sui actions. It gives a user one place to prepare an action, inspect the PTB, run policy checks, execute on testnet, archive the receipt context, and restore the trace later.
+<p align="center">
+  <strong>Verifiable execution for AI actions on Sui.</strong>
+</p>
 
-The current app focuses on three demo actions:
+<p align="center">
+  MeshAction turns an agent proposal into an inspectable, policy-checked, on-chain action with an encrypted audit trail.
+</p>
 
-- `transfer`: send a small testnet SUI transfer.
-- `contract_call`: call the published `demo_action::mark_action` Move function.
-- `copy_trade`: mirror a verified leader PTB into a follower PTB with an explicit execution review step.
+<p align="center">
+  <a href="#why-meshaction">Why</a>
+  ·
+  <a href="#quickstart">Quickstart</a>
+  ·
+  <a href="#how-it-works">How it works</a>
+  ·
+  <a href="#verification">Verification</a>
+</p>
 
-## What It Does
+---
 
-The console is built around the trace, not around a simple transaction form. A session contains the user intent, proposal, inspected action, policy decision, claim, execution receipt, archive reference, and audit event. The UI keeps those steps visible through chat, a workflow graph, and a selected-node inspector.
+## Why MeshAction
 
-Important product behavior:
+AI agents are useful only when their actions can be trusted. MeshAction is built for workflows where an agent can propose an action, but execution still needs inspection, policy checks, user review, and a durable receipt.
 
-- Sessions are created only when the user starts work, not when the page loads.
-- `copy_trade` cannot execute until a PTB has been inspected and the user has explicitly confirmed the risk review.
-- BYO agents are opt-in per action. A verified BYO agent in the registry is never selected silently.
-- Execution records are written as protocol events and can be restored for verification.
+The console is designed around one principle: **agents propose, MeshAction verifies and executes**.
 
-## Stack
+- Inspect the PTB before it touches the chain.
+- Run deterministic policy checks before execution.
+- Require explicit review for high-risk actions such as copy trading.
+- Execute real Sui testnet transactions from the server-side signer.
+- Archive receipt context through Walrus and Seal.
+- Restore traces later for verification, debugging, or audit.
 
-- Next.js App Router
-- React 19
-- Bun
-- Tailwind CSS v4
-- shadcn/Base UI primitives
-- React Flow
-- Postgres for local session, trace, and registry indexes
-- SuiMesh SDK, imported through the `@suimesh/sdk` alias
-- Sui testnet, Walrus, and Seal for the live demo path
+## What You Can Run
 
-## Repository Layout
+MeshAction currently ships with three Sui action demos:
 
-```text
-src/app                 Next.js routes and API handlers
-src/components/console  Console UI and workflow graph
-src/components/ui       Local UI primitives
-src/lib                 SuiMesh, Sui, auth, storage, and agent runtime code
-scripts                 Smoke test entrypoints
-contracts               Demo Move package
-docs/concepts           Product/design reference
-```
+| Action | What it does | Guardrail |
+| --- | --- | --- |
+| `transfer` | Sends a small testnet SUI transfer | PTB inspection and policy check |
+| `contract_call` | Calls the published `demo_action::mark_action` Move function | Contract target and argument validation |
+| `copy_trade` | Mirrors a verified leader PTB into a follower PTB | Explicit execution review before submit |
 
-The app imports the SuiMesh SDK through the `@suimesh/sdk` TypeScript alias. For local development, point `.suimesh-sdk` at an SDK checkout or update `tsconfig.json` and `next.config.ts` to match your own SDK source location. `.suimesh-sdk` is intentionally ignored because it is a machine-local alias.
+The same flow can be extended to other actions where the system must separate proposal, review, execution, and audit.
 
-## Local Setup
+## Product Surface
+
+The app is a workflow console, not a transaction form. A session keeps the full action lifecycle visible:
+
+- Chat for intent, proposal, and execution feedback.
+- Workflow graph for each trace step.
+- Inspector panel for the selected node.
+- BYO agent registry with signed registration.
+- Runtime status for Sui, archive, and model configuration.
+
+Sessions are created only when work starts. Verified BYO agents are never selected silently; the user chooses them per action.
+
+## Quickstart
 
 Install dependencies:
 
@@ -53,13 +67,19 @@ Install dependencies:
 bun install
 ```
 
-Create a local environment from the template:
+Create an environment file:
 
 ```bash
 cp .env.example .env.local
 ```
 
-At minimum, set:
+Point the SDK alias at a local SuiMesh SDK checkout, or update `tsconfig.json` and `next.config.ts` to use your own SDK source path:
+
+```bash
+ln -s /path/to/suimesh .suimesh-sdk
+```
+
+Set the required runtime values:
 
 ```bash
 DATABASE_URL=postgresql://admin:admin@127.0.0.1:5432/admin
@@ -68,15 +88,7 @@ SUIMESH_SUI_PRIVATE_KEY=suiprivkey...
 SUIMESH_SUI_ADDRESS=0x...
 ```
 
-You can also use a Sui CLI keystore entry instead of `SUIMESH_SUI_PRIVATE_KEY`:
-
-```bash
-SUIMESH_SUI_KEYSTORE_ENTRY=<base64 Sui CLI keystore entry>
-```
-
-Never commit `.env.local`, `.sui/`, `.sui-home/`, private keys, keystores, or generated build output. The repository ignores those paths.
-
-Start the app:
+Start the console:
 
 ```bash
 bun run dev
@@ -89,9 +101,28 @@ bun run lint
 bun run build
 ```
 
-## Hosted Agent Configuration
+## Configuration
 
-Hosted proposal and audit agents are optional. When enabled, the app calls an OpenAI-compatible chat completions endpoint, then still builds, inspects, evaluates, claims, executes, and archives deterministically.
+### Sui Signer
+
+Execution uses a server-side Sui signer. Use a Sui bech32 private key when possible:
+
+```bash
+SUIMESH_SUI_PRIVATE_KEY=suiprivkey...
+SUIMESH_SUI_ADDRESS=0x...
+```
+
+A Sui CLI keystore entry is also supported for local compatibility:
+
+```bash
+SUIMESH_SUI_KEYSTORE_ENTRY=<base64 Sui CLI keystore entry>
+```
+
+Do not commit `.env.local`, `.sui/`, `.sui-home/`, private keys, keystores, generated Move build output, or local SDK aliases. These are ignored by default.
+
+### Hosted Agents
+
+Hosted proposal and audit agents are optional. When enabled, MeshAction can call an OpenAI-compatible chat completions endpoint for proposal generation, while the execution path remains deterministic.
 
 ```bash
 MESHACTION_LLM_AGENTS=true
@@ -100,19 +131,11 @@ MESHACTION_LLM_MODEL=gpt-4.1-mini
 MESHACTION_LLM_BASE_URL=https://api.openai.com/v1
 ```
 
-Compatibility aliases are also accepted: `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_BASE_URL`, `SUIMESH_LLM_*`, and `SUIMESH_OPENAI_*`.
+Compatibility aliases are accepted: `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_BASE_URL`, `SUIMESH_LLM_*`, and `SUIMESH_OPENAI_*`.
 
-If your local network cannot reach OpenAI directly, set a proxy before running the app or tests:
+If your network requires a proxy, configure the standard `HTTPS_PROXY`, `HTTP_PROXY`, or `ALL_PROXY` environment variables before running the app or tests.
 
-```bash
-export https_proxy=http://127.0.0.1:7890
-export http_proxy=http://127.0.0.1:7890
-export all_proxy=socks5://127.0.0.1:7890
-```
-
-## Sui, Walrus, And Seal
-
-Simulation uses Sui RPC `devInspectTransactionBlock` against the configured network. Execution signs and submits real testnet transactions with the server-side signer.
+### Walrus And Seal
 
 Walrus and Seal are used for encrypted archive references:
 
@@ -123,7 +146,7 @@ SUIMESH_WALRUS_EPOCHS=5
 SUIMESH_SEAL_PACKAGE_ID=0xdeb6325f80800c0f58d99d28b06a65f4b02adccc3275bd375e144e000bfc6bdd
 ```
 
-Development fallbacks exist, but they are not the production path:
+Local archive fallbacks exist for development, but they are not the verification path:
 
 ```bash
 SUIMESH_WALRUS_DISABLED=true
@@ -131,9 +154,25 @@ SUIMESH_SEAL_MODE=local
 SUIMESH_LOCAL_ARCHIVE_KEY=<local secret>
 ```
 
+## How It Works
+
+```text
+Intent
+  -> Proposal
+  -> PTB inspection
+  -> Policy evaluation
+  -> Claim
+  -> User review
+  -> Sui execution
+  -> Walrus / Seal archive
+  -> Trace restore
+```
+
+The app stores local session and registry indexes in Postgres. Protocol events, execution receipts, archive references, and restored traces are handled through the SuiMesh SDK.
+
 ## BYO Agents
 
-BYO agents register with a Sui personal-message signature. Once verified, a BYO agent can be selected for `transfer`, `contract_call`, or `copy_trade`.
+BYO agents register with a Sui personal-message signature. Once verified, an agent can be selected for `transfer`, `contract_call`, or `copy_trade`.
 
 Registration signs this body:
 
@@ -154,25 +193,27 @@ SUIMESH_ALLOW_INSECURE_BYO_HTTP=true
 SUIMESH_ALLOW_LOCAL_BYO_ENDPOINTS=true
 ```
 
-## API Surface
+## API
 
-- `GET /agents`
-- `POST /agents/register`
-- `POST /agents/:id/disable`
-- `GET /runtime/status`
-- `GET /sessions`
-- `POST /sessions`
-- `POST /sessions/:id/messages`
-- `GET /sessions/:id/graph`
-- `GET /traces/:id`
-- `POST /traces/:id/propose`
-- `POST /traces/:id/evaluate`
-- `POST /traces/:id/execute`
-- `POST /traces/:id/archive`
+| Method | Route |
+| --- | --- |
+| `GET` | `/agents` |
+| `POST` | `/agents/register` |
+| `POST` | `/agents/:id/disable` |
+| `GET` | `/runtime/status` |
+| `GET` | `/sessions` |
+| `POST` | `/sessions` |
+| `POST` | `/sessions/:id/messages` |
+| `GET` | `/sessions/:id/graph` |
+| `GET` | `/traces/:id` |
+| `POST` | `/traces/:id/propose` |
+| `POST` | `/traces/:id/evaluate` |
+| `POST` | `/traces/:id/execute` |
+| `POST` | `/traces/:id/archive` |
 
-## Live Verification
+## Verification
 
-The SuiMesh SDK live regression was run against the public test relayer:
+The live SuiMesh regression has been run against the public test relayer:
 
 ```bash
 SUIMESH_NETWORK=testnet \
@@ -184,26 +225,24 @@ SUIMESH_WALRUS_READ_DELAY_MS=5000 \
 bun run test:live:full-regression
 ```
 
-Result: passed.
-
-Covered steps:
+Covered path:
 
 - TypeScript check and SDK unit tests.
 - Public relayer health check.
 - Remote Sui Stack Messaging group creation, message restore, and reconnect restore.
 - OpenAI-backed proposal generation and independent proposal verification.
 - Live heavy action with testnet execution.
-- Walrus archive write/read/decrypt.
+- Walrus archive write, read, and decrypt.
 - Full business path: relayer, devInspect, policy, claim, execute, Walrus/Seal archive, reconnect restore, and trace verification.
 
-Recent live transaction digests:
+Recent testnet execution digests:
 
 ```text
 heavy action execute: 8C9eHVBqoVSu2qQsNBxxnXosSvXGCd4C5B8XuXUb55PY
 business e2e execute: 6ZT9QcWZCGri31hBZgCGkSfH6fTtqcrxTZxhnNfdYbY3
 ```
 
-## Demo Package
+## Demo Move Package
 
 Published testnet package:
 
@@ -211,8 +250,20 @@ Published testnet package:
 0xdeb6325f80800c0f58d99d28b06a65f4b02adccc3275bd375e144e000bfc6bdd
 ```
 
-Move build:
+Build locally:
 
 ```bash
 sui move build --path contracts/demo_move_call
+```
+
+## Repository
+
+```text
+src/app                 Next.js routes and API handlers
+src/components/console  Console UI and workflow graph
+src/components/ui       Local UI primitives
+src/lib                 SuiMesh, Sui, auth, storage, and agent runtime code
+scripts                 Smoke test entrypoints
+contracts               Demo Move package
+docs/concepts           Product and design references
 ```
