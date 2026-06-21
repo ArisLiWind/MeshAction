@@ -19,7 +19,7 @@ export function LandingPage() {
 
   return (
     <div className="relative min-h-screen bg-black text-white overflow-x-hidden">
-      <!-- Navbar (sticky top) -->
+      {/* Navbar (sticky top) */}
       <nav className="sticky top-0 z-50 flex items-center h-16 px-6 md:px-10 bg-black border-b border-white/5">
         <Image
           src="/images/logo-text.png"
@@ -32,7 +32,7 @@ export function LandingPage() {
         <div className="ml-auto flex items-center"></div>
       </nav>
 
-      <!-- ===== Page 1: Hero ===== -->
+      {/* ===== Page 1: Hero ===== */}
       <section className="relative -mt-16 pt-16 min-h-screen flex flex-col overflow-hidden">
         <video
           autoPlay
@@ -152,9 +152,13 @@ export function LandingPage() {
         <div className="relative z-20 max-w-3xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-medium tracking-tight mb-4">Get Started with MeshAction</h2>
           <p className="text-blue-100/80 mb-10 text-base md:text-lg">Build and Execute Trusted On-Chain Actions with AI Agents</p>
-          <button className="px-10 py-3.5 rounded-2xl bg-white text-blue-600 font-bold text-sm hover:bg-slate-100 active:scale-95 transition-all duration-200">
-            Connect Wallet
-          </button>
+          <ConnectModal
+            trigger={
+              <button className="px-10 py-3.5 rounded-2xl bg-white text-blue-600 font-bold text-sm hover:bg-slate-100 active:scale-95 transition-all duration-200">
+                Connect Wallet
+              </button>
+            }
+          />
         </div>
       </section>
 

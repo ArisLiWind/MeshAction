@@ -28,6 +28,7 @@
         "undici": "^8.4.1",
       },
       "devDependencies": {
+        "@next/swc-darwin-arm64": "^16.2.9",
         "@next/swc-wasm-nodejs": "16.2.7",
         "@tailwindcss/postcss": "^4",
         "@types/node": "^20",
@@ -270,7 +271,7 @@
 
     "@next/eslint-plugin-next": ["@next/eslint-plugin-next@16.2.7", "", { "dependencies": { "fast-glob": "3.3.1" } }, "sha512-VbS+QgMHqvIDMTIqD2xMBKK1otIpdAUKA8VLHFwR9h6OfU/mOm7w/69nQcvdmI8hCk99Wr2AsGLn/PJ/tMHw1w=="],
 
-    "@next/swc-darwin-arm64": ["@next/swc-darwin-arm64@16.2.7", "", { "os": "darwin", "cpu": "arm64" }, "sha512-vm1EDI/pVaBNNiychmxk3fft+OhQPVD9cIM/tReLZIQ3TfQ4kqI9DwKk00dzuS1ulC7icbrzCFrmRRlk9PfNdw=="],
+    "@next/swc-darwin-arm64": ["@next/swc-darwin-arm64@16.2.9", "", { "os": "darwin", "cpu": "arm64" }, "sha512-HkfxNYUCmcct0Xsqib5KxqMSHV4AHJq857BNRchyBDs4YS19aHzVfn1kDuBYKqLLQBjXgnkIsjV2Kd4d2wzYhw=="],
 
     "@next/swc-darwin-x64": ["@next/swc-darwin-x64@16.2.7", "", { "os": "darwin", "cpu": "x64" }, "sha512-O3IRSv1ZBL1zs0WrIgefTEcTKFVn+ryxBNe54erJ6KsD+2f/Mmt7g2jOYh8PSBdUwPtKQJuCsTMlZ7tIu2AcsQ=="],
 
@@ -1649,6 +1650,8 @@
     "micromatch/picomatch": ["picomatch@2.3.2", "", {}, "sha512-V7+vQEJ06Z+c5tSye8S+nHUfI51xoXIXjHQ99cQtKUkQqqO1kO/KCJUfZXuB47h/YBlDhah2H3hdUGXn8ie0oA=="],
 
     "msw/graphql": ["graphql@16.14.1", "", {}, "sha512-cQOsSMS/IrDz82PVyRDvf/Q1F/bRbBVjJlh+xYOkI1qw2bWRvWGiWc+m2O0d6l4Bt1fyY+8kzJ8JFWGJqNeDBg=="],
+
+    "next/@next/swc-darwin-arm64": ["@next/swc-darwin-arm64@16.2.7", "", { "os": "darwin", "cpu": "arm64" }, "sha512-vm1EDI/pVaBNNiychmxk3fft+OhQPVD9cIM/tReLZIQ3TfQ4kqI9DwKk00dzuS1ulC7icbrzCFrmRRlk9PfNdw=="],
 
     "next/postcss": ["postcss@8.4.31", "", { "dependencies": { "nanoid": "^3.3.6", "picocolors": "^1.0.0", "source-map-js": "^1.0.2" } }, "sha512-PS08Iboia9mts/2ygV3eLpY5ghnUcfLV/EXTOW1E2qYxJKGGBUtNjN76FYHnMs36RmARn41bC0AZmn+rR0OVpQ=="],
 
