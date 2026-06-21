@@ -33,6 +33,7 @@
     "undici": "^8.4.1"
   },
   "devDependencies": {
+    "@next/swc-wasm-nodejs": "16.2.7",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

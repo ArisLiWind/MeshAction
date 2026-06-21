@@ -1,5 +1,7 @@
-import { AgentConsole } from "@/components/console/agent-console";
+"use client";
+
+import { LandingPage } from "@/components/landing-page";
 
 export default function Home() {
-  return <AgentConsole />;
+  return <LandingPage />;
 }

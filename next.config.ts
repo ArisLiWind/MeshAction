@@ -1,12 +1,9 @@
 import type { NextConfig } from "next";
-import path from "node:path";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    externalDir: true,
-  },
-  turbopack: {
-    root: path.join(process.cwd(), ".."),
+  output: "export",
+  images: {
+    unoptimized: true,
   },
 };
 
