@@ -41,9 +41,11 @@ import {
   type ByoAgentChallenge,
 } from "@/lib/agent-identity";
 import {
-  PgEventTransport,
-  PgTraceGuard,
-} from "@/lib/pg-suimesh-adapters";
+  assertProtocolReadyForAnchor,
+  createProtocolEventTransport,
+  createProtocolTraceGuard,
+  ensureProtocolSessionGroup,
+} from "@/lib/suimesh-canonical";
 import {
   runHostedAuditAgent,
   runHostedProposalAgent,
@@ -249,12 +251,12 @@ function actionRegistry() {
 
 function suimeshClient() {
   client ??= createSuiMeshClient({
-    transport: new PgEventTransport(),
+    transport: createProtocolEventTransport(),
     storage: createSuimeshStorageAdapter(),
     simulator: {
       simulate: ({ ptbBytes }) => devInspectSuiPtb({ ptbBytes }),
     },
-    traceGuard: new PgTraceGuard(),
+    traceGuard: createProtocolTraceGuard(),
     actionRegistry: actionRegistry(),
     defaultActor: actors.audit,
   });
@@ -331,19 +333,17 @@ async function latestUserContent(sessionId: string) {
 }
 
 async function latestTraceEventHash(traceId: string, eventType: EventEnvelope["eventType"]) {
-  const result = await query<{ envelope: EventEnvelope }>(
-    `
-      select envelope
-      from suimesh_events
-      where trace_id = $1
-        and event_type = $2
-      order by id desc
-      limit 1
-    `,
-    [traceId, eventType]
-  );
-
-  return result.rows[0]?.envelope.eventHash;
+  const run = await getRun(traceId);
+  const sessionId =
+    run?.session_id ??
+    `session_${traceId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 16)}`;
+  const events = await suimeshClient().trace.restore(sessionId);
+  return events
+    .toReversed()
+    .find(
+      (event) =>
+        event.traceId === traceId && event.eventType === eventType
+    )?.eventHash;
 }
 
 async function seedAgentRegistry() {
@@ -391,16 +391,26 @@ async function ensureSession(
   actionType: ActionType,
   ownerUserId: string
 ) {
-  await assertSessionOwner(sessionId, ownerUserId);
+  const existing = await assertSessionOwner(sessionId, ownerUserId);
+  const protocolMetadata = await ensureProtocolSessionGroup({
+    sessionId,
+    name: `MeshAction ${actionType} ${sessionId}`,
+    existingMetadata: existing?.metadata,
+  });
+  const metadata = {
+    ...(existing?.metadata ?? {}),
+    ...(protocolMetadata ?? {}),
+  };
   await query(
     `
       insert into suimesh_sessions (session_id, owner_user_id, semantic_type, status, metadata)
-      values ($1, $2, $3, 'ready', '{}'::jsonb)
+      values ($1, $2, $3, 'ready', $4::jsonb)
       on conflict (session_id) do update
       set semantic_type = excluded.semantic_type,
+          metadata = suimesh_sessions.metadata || excluded.metadata,
           updated_at = now()
     `,
-    [sessionId, ownerUserId, actionType]
+    [sessionId, ownerUserId, actionType, JSON.stringify(metadata)]
   );
 }
 
@@ -2030,6 +2040,7 @@ export async function evaluateTrace(input: {
   let anchor: ActionAnchor | undefined;
   let status = statusFromDecision(decision);
   if (decision.decision === "approved") {
+    await assertProtocolReadyForAnchor();
     const proposalHash = await latestTraceEventHash(
       input.traceId,
       "decision.sui_ptb_action.v1"

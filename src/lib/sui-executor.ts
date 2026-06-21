@@ -147,6 +147,10 @@ export function getSuiRuntimeClient() {
   return getRuntimeSigner().client;
 }
 
+export function getSuiRuntimeSigner() {
+  return getRuntimeSigner();
+}
+
 function utf8Vector(value: string) {
   return Array.from(new TextEncoder().encode(value));
 }

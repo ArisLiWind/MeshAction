@@ -231,8 +231,30 @@ type RuntimeStatus = {
   errors: string[];
 };
 
+type ProtocolStatus = {
+  mode: "canonical" | "pg";
+  canonical: boolean;
+  ok: boolean;
+  transport: string;
+  traceGuard: string;
+  relayerUrl?: string;
+  tracePackageId?: string;
+  traceRegistryId?: string;
+  registry?: {
+    objectId: string;
+    expectedType: string;
+    actualType?: string;
+    ownerAddress?: string;
+    ownerMatchesSigner: boolean;
+    writable: boolean;
+    errors: string[];
+  };
+  errors: string[];
+};
+
 type RuntimeStatusApiResponse = {
   runtime: RuntimeStatus;
+  protocol?: ProtocolStatus;
 };
 
 type AuthUser = {
@@ -428,6 +450,7 @@ export function AgentConsole() {
   const [sessionError, setSessionError] = useState<string>();
   const [sessionIndex, setSessionIndex] = useState<SessionIndexItem[]>([]);
   const [runtimeStatus, setRuntimeStatus] = useState<RuntimeStatus>();
+  const [protocolStatus, setProtocolStatus] = useState<ProtocolStatus>();
   const [runtimeStatusError, setRuntimeStatusError] = useState<string>();
   const [authUser, setAuthUser] = useState<AuthUser>();
   const [authLoading, setAuthLoading] = useState(true);
@@ -444,11 +467,16 @@ export function AgentConsole() {
     sessionError ??
     runtimeStatusError ??
     (runtimeStatus?.errors.length ? runtimeStatus.errors.join(" | ") : undefined) ??
+    (protocolStatus?.errors.length ? protocolStatus.errors.join(" | ") : undefined) ??
     (!runtimeBooting && !runtimeStatus ? "Runtime status unavailable" : undefined);
   const runtimeBlockerLabel = runtimeBlocker
     ? userFacingRuntimeBlocker(runtimeBlocker)
     : undefined;
-  const runtimeReady = !runtimeBooting && !runtimeBlocker && runtimeStatus?.ok === true;
+  const runtimeReady =
+    !runtimeBooting &&
+    !runtimeBlocker &&
+    runtimeStatus?.ok === true &&
+    protocolStatus?.ok !== false;
   const signedIn = Boolean(authUser);
   const workflowControlsDisabled = busy || !signedIn || !runtimeReady;
   const chatDisabled = busy || !signedIn || !runtimeReady;
@@ -535,9 +563,11 @@ export function AgentConsole() {
     try {
       const response = await getJson<RuntimeStatusApiResponse>("/runtime/status");
       setRuntimeStatus(response.runtime);
+      setProtocolStatus(response.protocol);
       setRuntimeStatusError(undefined);
     } catch (error) {
       setRuntimeStatus(undefined);
+      setProtocolStatus(undefined);
       setRuntimeStatusError(
         error instanceof Error ? error.message : "Runtime status unavailable"
       );
@@ -1365,6 +1395,7 @@ export function AgentConsole() {
             runtimeTrace={runtimeTrace}
             agents={registryAgents}
             runtimeStatus={runtimeStatus}
+            protocolStatus={protocolStatus}
             runtimeStatusError={runtimeStatusError}
             className="order-3"
           />
@@ -2768,7 +2799,15 @@ function userFacingRuntimeBlocker(message: string) {
     return "Server-side Sui signer is not configured.";
   }
   if (normalized.includes("does not match signer")) {
-    return "Configured signer address does not match the private key.";
+    return normalized.includes("trace registry owner")
+      ? "Runtime signer does not own the configured MeshAction trace registry."
+      : "Configured signer address does not match the private key.";
+  }
+  if (normalized.includes("suimesh_trace_registry_id")) {
+    return "MeshAction trace registry is not configured.";
+  }
+  if (normalized.includes("trace registry type mismatch")) {
+    return "Configured trace registry is not a SuiMesh trace::Registry for this package.";
   }
   if (normalized.includes("endpoint must use https")) {
     return "Selected BYO agent must use HTTPS, or local BYO mode must be enabled.";
@@ -2810,6 +2849,7 @@ function InspectorPanel({
   runtimeTrace,
   agents,
   runtimeStatus,
+  protocolStatus,
   runtimeStatusError,
   className,
 }: {
@@ -2819,6 +2859,7 @@ function InspectorPanel({
   runtimeTrace?: RuntimeTrace;
   agents: AgentManifest[];
   runtimeStatus?: RuntimeStatus;
+  protocolStatus?: ProtocolStatus;
   runtimeStatusError?: string;
   className?: string;
 }) {
@@ -2959,12 +3000,45 @@ function InspectorPanel({
                   label="Package"
                   value={runtimeStatus?.demoPackageId ?? "unknown"}
                 />
-                {runtimeStatusError || runtimeStatus?.errors.length ? (
+                <InspectorRow
+                  label="Protocol"
+                  value={
+                    protocolStatus
+                      ? `${protocolStatus.transport} / ${protocolStatus.traceGuard}`
+                      : "unknown"
+                  }
+                />
+                <InspectorRow
+                  label="Trace reg."
+                  value={protocolStatus?.traceRegistryId ?? "not configured"}
+                />
+                <InspectorRow
+                  label="Reg. owner"
+                  value={protocolStatus?.registry?.ownerAddress ?? "unknown"}
+                />
+                <InspectorRow
+                  label="Writable"
+                  value={
+                    protocolStatus?.canonical
+                      ? protocolStatus.registry?.writable
+                        ? "yes"
+                        : "no"
+                      : "local cache"
+                  }
+                />
+                {runtimeStatusError ||
+                runtimeStatus?.errors.length ||
+                protocolStatus?.errors.length ? (
                   <CodeLine
                     icon={FileSearch}
                     text={
-                      runtimeStatusError ??
-                      runtimeStatus?.errors.join(" | ") ??
+                      [
+                        runtimeStatusError,
+                        ...(runtimeStatus?.errors ?? []),
+                        ...(protocolStatus?.errors ?? []),
+                      ]
+                        .filter(Boolean)
+                        .join(" | ") ||
                       "runtime status unavailable"
                     }
                   />

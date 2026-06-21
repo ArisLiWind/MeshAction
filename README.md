@@ -35,17 +35,24 @@ The console is designed around one principle: **agents propose, MeshAction verif
 - Archive receipt context through Walrus and Seal.
 - Restore traces later for verification, debugging, or audit.
 
-## Public SuiMesh Network
+## SuiMesh Network And Registry
 
-MeshAction is configured for the public SuiMesh testnet relay and trace registry:
+MeshAction can use the public SuiMesh testnet relay and the public trace package:
 
 ```bash
 SUIMESH_RELAYER_URL=https://relay.suimesh.link
 SUIMESH_TRACE_PACKAGE_ID=0x038caadb65def30619e6ec762715ea6ca232ac1195bc077086bc9a6b7e11bb80
-SUIMESH_TRACE_REGISTRY_ID=0x95c630c93000d9aeb9ff9512ead6209e0568eb327abb489dd5fc7390d034046b
 ```
 
-This is a shared test network. It is useful for demos, development, and integration testing, but it does not come with uptime, retention, or compatibility guarantees.
+The trace registry is different: it is a platform-owned execution ledger. The current SuiMesh trace contract only lets the registry owner call `anchor_action`, so a production MeshAction deployment must use a registry owned by the MeshAction runtime signer or by an explicitly authorized platform operator.
+
+Check a registry before using it:
+
+```bash
+sui client object $SUIMESH_TRACE_REGISTRY_ID --json
+```
+
+The object must be `${SUIMESH_TRACE_PACKAGE_ID}::trace::Registry`, and `content.owner` must match `SUIMESH_SUI_ADDRESS`. The public test registry may be useful for protocol-owner demos, but it is not a general-purpose registry for other platforms.
 
 ## What You Can Run
 
@@ -96,9 +103,10 @@ Set the required runtime values:
 ```bash
 DATABASE_URL=postgresql://admin:admin@127.0.0.1:5432/admin
 SUIMESH_SUI_NETWORK=testnet
+SUIMESH_PROTOCOL_MODE=canonical
 SUIMESH_RELAYER_URL=https://relay.suimesh.link
 SUIMESH_TRACE_PACKAGE_ID=0x038caadb65def30619e6ec762715ea6ca232ac1195bc077086bc9a6b7e11bb80
-SUIMESH_TRACE_REGISTRY_ID=0x95c630c93000d9aeb9ff9512ead6209e0568eb327abb489dd5fc7390d034046b
+SUIMESH_TRACE_REGISTRY_ID=0x_YOUR_MESHACTION_TRACE_REGISTRY_ID
 SUIMESH_SUI_PRIVATE_KEY=suiprivkey...
 SUIMESH_SUI_ADDRESS=0x...
 ```
@@ -137,15 +145,18 @@ Do not commit `.env.local`, `.sui/`, `.sui-home/`, private keys, keystores, gene
 
 ### SuiMesh Relay And Trace Registry
 
-Use the public relay and trace contracts for live testnet runs:
+Use the public relay and trace package for live testnet runs:
 
 ```bash
+SUIMESH_PROTOCOL_MODE=canonical
 SUIMESH_RELAYER_URL=https://relay.suimesh.link
 SUIMESH_TRACE_PACKAGE_ID=0x038caadb65def30619e6ec762715ea6ca232ac1195bc077086bc9a6b7e11bb80
-SUIMESH_TRACE_REGISTRY_ID=0x95c630c93000d9aeb9ff9512ead6209e0568eb327abb489dd5fc7390d034046b
+SUIMESH_TRACE_REGISTRY_ID=0x_YOUR_MESHACTION_TRACE_REGISTRY_ID
 ```
 
-The public relay is a testnet service. Treat failures, resets, and contract changes as possible during active development.
+`SUIMESH_TRACE_REGISTRY_ID` must point at a MeshAction-owned registry. `/runtime/status` reads the Sui object over RPC and reports `protocol.ok=false` if the registry type is wrong or `content.owner` does not match the runtime signer. This avoids reaching the chain only to fail with `E_UNAUTHORIZED_OWNER` during `anchor_action`.
+
+Create or provision the registry during platform bootstrap, then keep the registry ID and the owner signer in your deployment secrets. Postgres remains only an index/cache; the protocol truth is the SuiMesh relay, Sui trace registry, Walrus, and Seal.
 
 ### Hosted Agents
 
@@ -195,7 +206,7 @@ Intent
   -> Trace restore
 ```
 
-The app stores local session and registry indexes in Postgres. Protocol events, execution receipts, archive references, and restored traces are handled through the SuiMesh SDK.
+The app stores local session and agent-registry indexes in Postgres. Protocol events, execution receipts, archive references, and restored traces are handled through the SuiMesh SDK. In canonical mode, event delivery uses SuiStack relay and trace ownership is enforced by the on-chain registry; Postgres mirrors events only for UI indexing and recovery speed.
 
 ## BYO Agents
 
@@ -240,35 +251,36 @@ SUIMESH_ALLOW_LOCAL_BYO_ENDPOINTS=true
 
 ## Verification
 
-The live SuiMesh regression has been run against the public test relayer:
+The MeshAction smoke test has been run against the public test relay, the public trace package, and a registry whose owner signer was configured as the MeshAction runtime signer:
 
 ```bash
-SUIMESH_NETWORK=testnet \
+DATABASE_URL=postgresql://admin:admin@127.0.0.1:5432/admin \
+MESHACTION_SMOKE_BASE_URL=http://localhost:3024 \
+MESHACTION_SMOKE_BYO_PORT=4024 \
+SUIMESH_SUI_NETWORK=testnet \
+SUIMESH_PROTOCOL_MODE=canonical \
 SUIMESH_RELAYER_URL=https://relay.suimesh.link \
 SUIMESH_TRACE_PACKAGE_ID=0x038caadb65def30619e6ec762715ea6ca232ac1195bc077086bc9a6b7e11bb80 \
-SUIMESH_TRACE_REGISTRY_ID=0x95c630c93000d9aeb9ff9512ead6209e0568eb327abb489dd5fc7390d034046b \
-OPENAI_MODEL=gpt-4.1-mini \
-SUIMESH_OPENAI_MODEL=gpt-4.1-mini \
-SUIMESH_WALRUS_READ_ATTEMPTS=24 \
-SUIMESH_WALRUS_READ_DELAY_MS=5000 \
-bun run test:live:full-regression
+SUIMESH_TRACE_REGISTRY_ID=0x_YOUR_MESHACTION_TRACE_REGISTRY_ID \
+bun run smoke:e2e
 ```
 
 Covered path:
 
-- TypeScript check and SDK unit tests.
-- Public relayer health check.
-- Remote Sui Stack Messaging group creation, message restore, and reconnect restore.
-- OpenAI-backed proposal generation and independent proposal verification.
-- Live heavy action with testnet execution.
-- Walrus archive write, read, and decrypt.
-- Full business path: relayer, devInspect, policy, claim, execute, Walrus/Seal archive, reconnect restore, and trace verification.
+- Wallet sign-in challenge.
+- Signed BYO agent registration and BYO request verification.
+- Transfer, contract call, and copy-trade PTB proposal paths.
+- Remote SuiStack relay event delivery with local Postgres mirroring.
+- Sui devInspect, policy approval, on-chain anchor, claim, execute, receipt, and audit.
+- Walrus archive write/read verification.
+- Trace restore and verification.
 
 Recent testnet execution digests:
 
 ```text
-heavy action execute: 8C9eHVBqoVSu2qQsNBxxnXosSvXGCd4C5B8XuXUb55PY
-business e2e execute: 6ZT9QcWZCGri31hBZgCGkSfH6fTtqcrxTZxhnNfdYbY3
+transfer: 4RidUhnnV6i4UdFtaXCLCpC6YXqSAd67B9mdBknK49Ru
+contract_call: 3F7PhZKAxafbe5qW6t31wmdJ2wFdJhGqvr4Hap3pTMB4
+copy_trade: aHct6R8zbN7oimrb9oapodGn5j6LfV1r2zBjGLUydkm
 ```
 
 ## Demo Move Package
